@@ -1,6 +1,6 @@
 {
   "name": "@zhouyuejin1995/swagger-to-api",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Swagger 2.0 → TypeScript API client code generator. Pulls a Swagger doc (URL or file), emits typed request functions + DTOs into your project.",
   "type": "module",
   "main": "./dist/index.js",

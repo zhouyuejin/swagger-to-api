@@ -51,6 +51,7 @@ export interface Definition {
   type?: string;
   description?: string;
   properties?: Record<string, Schema>;
+  required?: string[];
 }
 
 export interface Schema {
@@ -75,6 +76,7 @@ export interface ModelProperty {
   name: string;
   type: string;
   description: string;
+  required: boolean;
   imports: Set<string>;
 }
 

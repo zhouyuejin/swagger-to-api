@@ -68,7 +68,8 @@ function emitModel(dir: string, model: Model): void {
   content += `${descLine}export type ${name} = {\n`;
   for (const prop of properties) {
     const desc = prop.description ? `  /** ${prop.description} */\n` : '';
-    content += `${desc}  ${prop.name}?: ${prop.type};\n`;
+    const optional = prop.required ? '' : '?';
+    content += `${desc}  ${prop.name}${optional}: ${prop.type};\n`;
   }
   content += '};\n';
   fs.writeFileSync(path.join(dir, `${name}.ts`), content);

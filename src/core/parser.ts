@@ -7,6 +7,8 @@
  *   - 即使响应是 响应结果«PageVO«X»»，也展开 data 中的 list.items 还原成 PageVO<X>
  *   - 收集每个 model / 每个函数依赖的 import，便于 emitter 写出
  *   - 命名策略通过参数注入（调用方可传入自定义 NamingStrategy）
+ *   - 循环引用防护：跟踪正在解析的 \$ref 链，命中即返回类型名本身（TS 结构化类型天然支持自引用）
+ *   - 必填字段：从 definitions.required 数组读取，emitter 据此决定是否加 ?:
  */
 import type {
   ApiFunction, Definition, FunctionParams, Model, Parameter, ParseResult, QueryParam, Schema, SwaggerDoc,
@@ -30,18 +32,34 @@ function extractPageVoInnerRef(refName: string): string | null {
 
 interface TypeResolution { typeStr: string; imports: Set<string> }
 
-/** 递归解析 schema → TS 类型字符串 + import 集合 */
-function resolveType(schema: Schema | undefined, defs: Record<string, Definition>, naming: NamingStrategy): TypeResolution {
+/** 递归解析 schema → TS 类型字符串 + import 集合
+ *
+ * seenRefs：当前解析栈里出现过的 \$ref 名，用于打断循环引用。
+ * 命中时直接返回类型名本身，让 TS 结构化类型系统处理自引用。
+ */
+function resolveType(
+  schema: Schema | undefined,
+  defs: Record<string, Definition>,
+  naming: NamingStrategy,
+  seenRefs: Set<string> = new Set(),
+): TypeResolution {
   if (!schema) return { typeStr: 'any', imports: new Set() };
 
   // $ref 引用
   if (schema.$ref) {
     const refName = schema.$ref.replace('#/definitions/', '');
+
+    // 循环引用：命中栈里的名字，直接返回类型名
+    if (seenRefs.has(refName)) {
+      const engName = naming.modelName(refName);
+      return { typeStr: engName, imports: new Set([engName]) };
+    }
+
     // 分页容器 → 还原泛型
     if (extractPageVoInnerRef(refName) !== null) {
       const innerItems = defs[refName]?.properties?.list?.items;
       if (innerItems) {
-        const inner = resolveType(innerItems, defs, naming);
+        const inner = resolveType(innerItems, defs, naming, seenRefs);
         return { typeStr: `PageVO<${inner.typeStr}>`, imports: new Set([...inner.imports, 'PageVO']) };
       }
       return { typeStr: 'PageVO<any>', imports: new Set(['PageVO']) };
@@ -56,7 +74,7 @@ function resolveType(schema: Schema | undefined, defs: Record<string, Definition
 
   // 数组
   if (schema.type === 'array') {
-    const inner = resolveType(schema.items ?? { type: 'object' }, defs, naming);
+    const inner = resolveType(schema.items ?? { type: 'object' }, defs, naming, seenRefs);
     return { typeStr: `${inner.typeStr}[]`, imports: inner.imports };
   }
 
@@ -65,7 +83,7 @@ function resolveType(schema: Schema | undefined, defs: Record<string, Definition
     const imports = new Set<string>();
     const props = Object.entries(schema.properties)
       .map(([k, v]) => {
-        const inner = resolveType(v, defs, naming);
+        const inner = resolveType(v, defs, naming, seenRefs);
         inner.imports.forEach((i) => imports.add(i));
         const desc = v.description ? `/** ${v.description} */ ` : '';
         return `${desc}${k}?: ${inner.typeStr}`;
@@ -74,34 +92,55 @@ function resolveType(schema: Schema | undefined, defs: Record<string, Definition
     return { typeStr: `{ ${props} }`, imports };
   }
 
-  // 无 properties 的 object → Record
   if (schema.type === 'object') {
     return { typeStr: 'Record<string, any>', imports: new Set() };
   }
 
-  // 基础类型
   const typeMap: Record<string, string> = {
     string: 'string', integer: 'number', number: 'number', boolean: 'boolean',
   };
   return { typeStr: typeMap[schema.type ?? ''] || 'any', imports: new Set() };
 }
 
-function parseProperties(props: Record<string, Schema> | undefined, defs: Record<string, Definition>, naming: NamingStrategy) {
+/** 解析 definitions 的 properties + required 列表 */
+function parseProperties(
+  props: Record<string, Schema> | undefined,
+  required: string[] | undefined,
+  defs: Record<string, Definition>,
+  naming: NamingStrategy,
+  parentRefName: string,
+) {
   if (!props) return [];
+  const seenRefs = new Set<string>([parentRefName]);
   return Object.entries(props).map(([key, schema]) => {
-    const { typeStr, imports } = resolveType(schema, defs, naming);
-    return { name: key, type: typeStr, description: schema.description || '', imports };
+    const { typeStr, imports } = resolveType(schema, defs, naming, seenRefs);
+    return {
+      name: key,
+      type: typeStr,
+      description: schema.description || '',
+      required: required?.includes(key) ?? false,
+      imports,
+    };
   });
 }
 
 /** 解包「响应结果»X»」的 data 字段，得到实际返回类型 */
-function unwrapResponse(def: Definition | undefined, defs: Record<string, Definition>, naming: NamingStrategy): TypeResolution {
+function unwrapResponse(
+  def: Definition | undefined,
+  defs: Record<string, Definition>,
+  naming: NamingStrategy,
+  seenRefs: Set<string> = new Set(),
+): TypeResolution {
   const dataProp = def?.properties?.data;
   if (!dataProp) return { typeStr: 'void', imports: new Set() };
-  return resolveType(dataProp, defs, naming);
+  return resolveType(dataProp, defs, naming, seenRefs);
 }
 
-function parseParams(parameters: Parameter[] | undefined, defs: Record<string, Definition>, naming: NamingStrategy): FunctionParams {
+function parseParams(
+  parameters: Parameter[] | undefined,
+  defs: Record<string, Definition>,
+  naming: NamingStrategy,
+): FunctionParams {
   if (!parameters || !parameters.length) {
     return { query: [], body: null, path: [], imports: new Set() };
   }
@@ -135,13 +174,16 @@ function parseParams(parameters: Parameter[] | undefined, defs: Record<string, D
  *   - $ref → PageVO«X»：还原成 PageVO<X>
  *   - 其他 $ref：交给 unwrapResponse
  */
-function resolveReturnType(op: { responses: Record<string, { schema?: Schema }> }, defs: Record<string, Definition>, naming: NamingStrategy): TypeResolution {
+function resolveReturnType(
+  op: { responses: Record<string, { schema?: Schema }> },
+  defs: Record<string, Definition>,
+  naming: NamingStrategy,
+): TypeResolution {
   const schema200 = op.responses['200']?.schema ?? op.responses[200]?.schema;
   if (!schema200) return { typeStr: 'void', imports: new Set() };
   if (schema200.$ref) {
     const refName = schema200.$ref.replace('#/definitions/', '');
 
-    // 响应结果«PageVO«X»» → PageVO<X>
     if (refName.startsWith('响应结果')) {
       const dataProp = defs[refName]?.properties?.data;
       if (dataProp?.type === 'object' && dataProp.properties?.list?.items) {
@@ -151,7 +193,6 @@ function resolveReturnType(op: { responses: Record<string, { schema?: Schema }> 
       return unwrapResponse(defs[refName], defs, naming);
     }
 
-    // 直接 $ref 指向 PageVO«X» / 通用分页响应VO«X»
     if (extractPageVoInnerRef(refName) !== null) {
       const innerItems = defs[refName]?.properties?.list?.items;
       if (innerItems) {
@@ -161,7 +202,6 @@ function resolveReturnType(op: { responses: Record<string, { schema?: Schema }> 
       return { typeStr: 'PageVO<any>', imports: new Set(['PageVO']) };
     }
 
-    // 其他 $ref：标准 unwrapResponse
     return unwrapResponse(defs[refName], defs, naming);
   }
   return resolveType(schema200, defs, naming);
@@ -180,7 +220,7 @@ export function parse(swagger: SwaggerDoc, naming?: NamingStrategy): ParseResult
     if (extractPageVoInnerRef(name) !== null) continue;
 
     const engName = strategy.modelName(name);
-    const props = parseProperties(def.properties, defs, strategy);
+    const props = parseProperties(def.properties, def.required, defs, strategy, name);
     const allImports = new Set<string>();
     for (const p of props) p.imports.forEach((i) => allImports.add(i));
 
@@ -220,10 +260,8 @@ export function parse(swagger: SwaggerDoc, naming?: NamingStrategy): ParseResult
     }
   }
 
-  // ========== 3. 同模块内冲突处理 ==========
   for (const [, funcs] of modules) resolveConflicts(funcs);
 
-  // 转成对外的 Module 结构
   const result: ParseResult = {
     models,
     modules: new Map(),
