@@ -4,5 +4,8 @@
   "changelogPath": "CHANGELOG.md",
   "bumpMinorPreMajor": false,
   "bumpPatchForMinorPreMajor": false,
-  "draft": false
+  "includeComponentInTag": false,
+  "versioning": "default",
+  "pullRequestTitlePattern": "chore(main): release${scope} v${version}",
+  "tagName": "v${version}"
 }

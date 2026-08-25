@@ -3,11 +3,11 @@ name: Release Please
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: write
   pull-requests: write
-  issues: write
 
 jobs:
   release-please:
@@ -20,7 +20,10 @@ jobs:
           config-file: .github/release-please-config.json
           manifest-file: .github/release-please-manifest.json
       - name: Log release output
-        if: ${{ steps.release.outputs.release_created }}
         run: |
-          echo "Released ${{ steps.release.outputs.tag_name }}"
-          echo "Version ${{ steps.release.outputs.version }}"
+          echo "release_created: ${{ steps.release.outputs.release_created }}"
+          echo "tag_name: ${{ steps.release.outputs.tag_name }}"
+          echo "version: ${{ steps.release.outputs.version }}"
+          echo "release_id: ${{ steps.release.outputs.release_id }}"
+          echo "pr_number: ${{ steps.release.outputs.pr_number }}"
+          echo "pr_url: ${{ steps.release.outputs.pr_url }}"
