@@ -2,8 +2,7 @@
   "packages": {
     ".": {
       "releaseType": "node",
-      "packageName": "@zhouyuejin1995/swagger-to-api",
-      "changelogPath": "CHANGELOG.md"
+      "packageName": "@zhouyuejin1995/swagger-to-api"
     }
   }
 }
