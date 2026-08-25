@@ -2,7 +2,8 @@
   "packages": {
     ".": {
       "releaseType": "node",
-      "packageName": "@zhouyuejin1995/swagger-to-api"
+      "packageName": "@zhouyuejin1995/swagger-to-api",
+      "tagFormat": "swagger-to-api-v${version}"
     }
   }
 }
