@@ -52,6 +52,7 @@ export interface Definition {
   description?: string;
   properties?: Record<string, Schema>;
   required?: string[];
+  enum?: (string | number)[];
 }
 
 export interface Schema {
@@ -70,6 +71,8 @@ export interface Model {
   description: string;
   properties: ModelProperty[];
   imports: Set<string>;
+  /** 若设置，则生成字面量联合类型而非 object type */
+  enum?: (string | number)[];
 }
 
 export interface ModelProperty {

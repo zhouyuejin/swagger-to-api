@@ -57,9 +57,19 @@ export type PageVO<T> = {
 }
 
 function emitModel(dir: string, model: Model): void {
-  const { name, description, properties, imports } = model;
-  const filtered = [...imports].filter((i) => i !== name); // 过滤自引用
+  const { name, description, properties, imports, enum: enumVals } = model;
   let content = HEADER;
+
+  // 顶层 enum → 字面量联合类型
+  if (enumVals && enumVals.length > 0) {
+    const literals = enumVals.map((v) => (typeof v === 'string' ? `'${v}'` : String(v))).join(' | ');
+    const descLine = description ? `/** ${description} */\n` : '';
+    content += `${descLine}export type ${name} = ${literals};\n`;
+    fs.writeFileSync(path.join(dir, `${name}.ts`), content);
+    return;
+  }
+
+  const filtered = [...imports].filter((i) => i !== name);
   if (filtered.length > 0) {
     const list = filtered.map((i) => `  ${i}`).join(',\n');
     content += `import type {\n${list}\n} from './index';\n\n`;
@@ -71,7 +81,7 @@ function emitModel(dir: string, model: Model): void {
     const optional = prop.required ? '' : '?';
     content += `${desc}  ${prop.name}${optional}: ${prop.type};\n`;
   }
-  content += '};\n';
+  content += `};\n`;
   fs.writeFileSync(path.join(dir, `${name}.ts`), content);
 }
 
