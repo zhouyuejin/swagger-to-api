@@ -233,7 +233,9 @@ function resolveReturnType(
       return { typeStr: 'PageVO<any>', imports: new Set(['PageVO']) };
     }
 
-    return unwrapResponse(defs[refName], defs, naming);
+    // 直接 \$ref 到普通定义（非响应包装、非 PageVO 容器）→ 直接返回类型名
+    const engName = naming.modelName(refName);
+    return { typeStr: engName, imports: new Set([engName]) };
   }
   return resolveType(schema200, defs, naming);
 }
@@ -285,7 +287,8 @@ export function parse(swagger: SwaggerDoc | OpenAPIDoc, naming?: NamingStrategy)
     for (const [method, op] of Object.entries(methods)) {
       if (!['get', 'post', 'put', 'delete', 'patch'].includes(method)) continue;
 
-      const fnName = strategy.functionName(op.operationId || '');
+      // operationId 缺省时用 method + urlPath 段拼一个稳定名字
+      const fnName = strategy.functionName(op.operationId || (method.toUpperCase() + urlPath.replace(/[^A-Za-z0-9]+/g, '')))
       const params = parseParams(op.parameters, defs, strategy);
       const returnType = resolveReturnType(op, defs, strategy);
       const consumes = op.consumes || [];
