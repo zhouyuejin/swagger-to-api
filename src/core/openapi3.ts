@@ -96,10 +96,20 @@ function normalizeRequestBody(rb: RequestBody | undefined): Parameter[] {
 
 /** OAS3 operation → Swagger 2.0 operation */
 function normalizeOperation(op: OpenAPIOperation): Operation {
-  const params: Parameter[] = (op.parameters ?? []).map((p) => ({
-    ...p,
-    schema: p.schema ? rewriteRefs(p.schema) : undefined,
-  }));
+  const params: Parameter[] = (op.parameters ?? []).map((p) => {
+    // OAS3 把类型放在 schema 里；把它平铺到 param 一级，让旧 parser 能直接读 type
+    if (p.schema) {
+      const s = rewriteRefs(p.schema)!;
+      return {
+        ...p,
+        type: s.type ?? p.type,
+        format: s.format ?? p.format,
+        description: p.description ?? s.description,
+        schema: s,
+      };
+    }
+    return p;
+  });
   params.push(...normalizeRequestBody(op.requestBody));
 
   const responses: Record<string, { description: string; schema?: Schema }> = {};

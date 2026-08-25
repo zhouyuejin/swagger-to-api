@@ -86,6 +86,7 @@ export interface Parameter {
   description?: string;
   required?: boolean;
   type?: string;
+  format?: string;
   schema?: Schema;
 }
 
