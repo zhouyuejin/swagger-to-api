@@ -1,8 +1,8 @@
 /**
- * @yuejin/swagger-to-api 程序化 API 入口
+ * @zhouyuejin1995/swagger-to-api 程序化 API 入口
  *
  * 用法：
- *   import { loadSwagger, parse, emit, PinyinNamingStrategy } from '@yuejin/swagger-to-api';
+ *   import { loadSwagger, parse, emit, PinyinNamingStrategy } from '@zhouyuejin1995/swagger-to-api';
  *
  *   const swagger = await loadSwagger(config.input);
  *   const naming = new PinyinNamingStrategy({ nameMap: { '企业信息': 'Supplier' } });

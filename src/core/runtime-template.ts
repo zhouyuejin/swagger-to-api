@@ -7,7 +7,7 @@
 
 export const RUNTIME_TEMPLATE = `/* eslint-disable */
 /* prettier-ignore */
-// 默认 runtime 模板 — 由 @yuejin/swagger-to-api 生成。
+// 默认 runtime 模板 — 由 @zhouyuejin1995/swagger-to-api 生成。
 // 你可以安全编辑此文件；下一次生成不会覆盖你已修改的内容（除非删除该文件）。
 //
 // 要求：导出一个名为 \`http\` 的对象，包含以下方法（按需）：

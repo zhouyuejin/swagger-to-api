@@ -29,7 +29,7 @@ import { RUNTIME_TEMPLATE } from './runtime-template.js';
 
 const HEADER = `/* eslint-disable */
 /* prettier-ignore */
-// 自动生成，请勿手动编辑 — 运行 @yuejin/swagger-to-api 重新生成
+// 自动生成，请勿手动编辑 — 运行 @zhouyuejin1995/swagger-to-api 重新生成
 `;
 
 const DEFAULT_HTTP_METHOD_MAP: HttpMethodMap = {

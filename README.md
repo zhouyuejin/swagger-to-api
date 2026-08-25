@@ -1,4 +1,4 @@
-# @yuejin/swagger-to-api
+# @zhouyuejin1995/swagger-to-api
 
 > Swagger 2.0 → TypeScript API 客户端代码生成器。拉一份 swagger 文档（URL 或本地 JSON），在项目里生成强类型的请求函数与 DTO。
 
@@ -19,9 +19,9 @@
 ## 安装
 
 ```bash
-npm install --save-dev @yuejin/swagger-to-api
+npm install --save-dev @zhouyuejin1995/swagger-to-api
 # 或
-pnpm add -D @yuejin/swagger-to-api
+pnpm add -D @zhouyuejin1995/swagger-to-api
 ```
 
 ## 快速开始
@@ -56,8 +56,8 @@ npx swagger-to-api -i ./swagger.json -o ./src/api
 ### 程序化 API
 
 ```ts
-import { loadSwagger, parse, emit, PinyinNamingStrategy } from '@yuejin/swagger-to-api';
-import type { SwaggerDoc } from '@yuejin/swagger-to-api';
+import { loadSwagger, parse, emit, PinyinNamingStrategy } from '@zhouyuejin1995/swagger-to-api';
+import type { SwaggerDoc } from '@zhouyuejin1995/swagger-to-api';
 
 const swagger: SwaggerDoc = await loadSwagger('http://localhost:8080/v2/api-docs');
 const naming = new PinyinNamingStrategy({ nameMap: { 企业信息: 'Supplier' } });
@@ -110,8 +110,8 @@ export const http = {
 实现 `NamingStrategy` 接口即可：
 
 ```ts
-import type { NamingStrategy } from '@yuejin/swagger-to-api';
-import { parse, loadSwagger } from '@yuejin/swagger-to-api';
+import type { NamingStrategy } from '@zhouyuejin1995/swagger-to-api';
+import { parse, loadSwagger } from '@zhouyuejin1995/swagger-to-api';
 
 class I18nNamingStrategy implements NamingStrategy {
   modelName(defName: string): string {

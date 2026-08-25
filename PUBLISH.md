@@ -6,7 +6,7 @@
 
 ```json
 {
-  "name": "@yuejin/swagger-to-api",
+  "name": "@zhouyuejin1995/swagger-to-api",
   "version": "0.1.0",
   "author": "yuejin",
   "bin": { "swagger-to-api": "./dist/cli/index.js" }
@@ -34,7 +34,7 @@
 npm config set registry https://registry.npmjs.org
 
 # 2. 确认 scoped 包名可用（前面已经查过）
-npm view @yuejin/swagger-to-api
+npm view @zhouyuejin1995/swagger-to-api
 # 404 就可以继续；否则报错
 
 # 3. 跑 prepublish 钩子（自动 clean + lint + test + build）
@@ -73,7 +73,7 @@ npm publish --access public
     "generate-api": "swagger-to-api --config config/api-generate.yaml"
   },
   "devDependencies": {
-    "@yuejin/swagger-to-api": "^0.1.0"
+    "@zhouyuejin1995/swagger-to-api": "^0.1.0"
   }
 }
 ```
@@ -83,7 +83,7 @@ npm publish --access public
 ## 接入新项目
 
 ```bash
-npm install --save-dev @yuejin/swagger-to-api
+npm install --save-dev @zhouyuejin1995/swagger-to-api
 # 写一份 api-gen.config.yaml
 npx swagger-to-api
 ```
