@@ -1,0 +1,59 @@
+{
+  "name": "@yuejin/swagger-to-api",
+  "version": "0.1.0",
+  "description": "Swagger 2.0 → TypeScript API client code generator. Pulls a Swagger doc (URL or file), emits typed request functions + DTOs into your project.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./cli": {
+      "types": "./dist/cli/index.d.ts",
+      "import": "./dist/cli/index.js"
+    }
+  },
+  "bin": {
+    "swagger-to-api": "./dist/cli/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run clean && npm run lint && npm run test && npm run build"
+  },
+  "keywords": [
+    "swagger",
+    "openapi",
+    "api-client",
+    "typescript",
+    "codegen",
+    "axios",
+    "fetch"
+  ],
+  "license": "MIT",
+  "author": "yuejin",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0",
+    "pinyin-pro": "^3.26.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.11.0",
+    "typescript": "~5.6.0",
+    "vitest": "^1.6.0"
+  }
+}

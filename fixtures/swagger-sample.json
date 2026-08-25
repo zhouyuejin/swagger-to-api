@@ -1,0 +1,107 @@
+{
+  "swagger": "2.0",
+  "info": { "title": "Sample API", "version": "1.0.0" },
+  "paths": {
+    "/api/auth/login": {
+      "post": {
+        "operationId": "loginUsingPOST",
+        "summary": "账号密码登录",
+        "parameters": [{ "name": "data", "in": "body", "required": true, "schema": { "$ref": "#/definitions/LoginDTO" } }],
+        "responses": { "200": { "description": "OK", "schema": { "$ref": "#/definitions/响应结果«TokenDTO»" } } }
+      }
+    },
+    "/api/auth/info": {
+      "get": {
+        "operationId": "getInfoUsingGET",
+        "summary": "获取当前用户信息",
+        "responses": { "200": { "description": "OK", "schema": { "$ref": "#/definitions/响应结果«UserInfo»" } } }
+      }
+    },
+    "/api/supplier/page": {
+      "get": {
+        "operationId": "pageSupplierUsingGET",
+        "summary": "分页查询企业",
+        "parameters": [
+          { "name": "pageNum", "in": "query", "type": "integer", "description": "页码", "required": true },
+          { "name": "pageSize", "in": "query", "type": "integer", "description": "每页大小", "required": true },
+          { "name": "keyword", "in": "query", "type": "string", "description": "搜索关键词" }
+        ],
+        "responses": { "200": { "description": "OK", "schema": { "$ref": "#/definitions/响应结果«PageVO«企业信息»»" } } }
+      }
+    },
+    "/api/supplier/save": {
+      "post": {
+        "operationId": "saveSupplierUsingPOST",
+        "summary": "新增企业",
+        "parameters": [{ "name": "data", "in": "body", "required": true, "schema": { "$ref": "#/definitions/企业信息" } }],
+        "responses": { "200": { "description": "OK", "schema": { "$ref": "#/definitions/响应结果«Void»" } } }
+      }
+    },
+    "/api/supplier/delete/{id}": {
+      "delete": {
+        "operationId": "deleteSupplierUsingDELETE",
+        "summary": "删除企业",
+        "parameters": [{ "name": "id", "in": "path", "type": "string", "required": true }],
+        "responses": { "200": { "description": "OK", "schema": { "$ref": "#/definitions/响应结果«Void»" } } }
+      }
+    },
+    "/dingTalk/callback": {
+      "get": {
+        "operationId": "dingTalkCallbackUsingGET",
+        "summary": "钉钉回调",
+        "responses": { "200": { "description": "OK", "schema": { "$ref": "#/definitions/响应结果«string»" } } }
+      }
+    }
+  },
+  "definitions": {
+    "响应结果«TokenDTO»": {
+      "type": "object",
+      "properties": { "code": { "type": "integer" }, "msg": { "type": "string" }, "data": { "$ref": "#/definitions/TokenDTO" } }
+    },
+    "响应结果«UserInfo»": {
+      "type": "object",
+      "properties": { "code": { "type": "integer" }, "msg": { "type": "string" }, "data": { "$ref": "#/definitions/UserInfo" } }
+    },
+    "响应结果«PageVO«企业信息»»": {
+      "type": "object",
+      "properties": {
+        "code": { "type": "integer" }, "msg": { "type": "string" },
+        "data": {
+          "type": "object",
+          "properties": {
+            "list": { "type": "array", "items": { "$ref": "#/definitions/企业信息" } },
+            "pageNum": { "type": "integer" }, "pageSize": { "type": "integer" },
+            "pages": { "type": "integer" }, "total": { "type": "integer" }
+          }
+        }
+      }
+    },
+    "响应结果«Void»": { "type": "object", "properties": { "code": { "type": "integer" }, "msg": { "type": "string" } } },
+    "响应结果«string»": { "type": "object", "properties": { "code": { "type": "integer" }, "msg": { "type": "string" }, "data": { "type": "string" } } },
+
+    "TokenDTO": {
+      "type": "object",
+      "description": "登录令牌",
+      "properties": { "token": { "type": "string", "description": "令牌字符串" }, "expireAt": { "type": "integer", "description": "过期时间" } }
+    },
+    "UserInfo": {
+      "type": "object",
+      "description": "用户信息",
+      "properties": { "id": { "type": "string" }, "name": { "type": "string", "description": "姓名" } }
+    },
+    "LoginDTO": {
+      "type": "object",
+      "description": "登录请求",
+      "properties": { "username": { "type": "string", "description": "账号" }, "password": { "type": "string", "description": "密码" } }
+    },
+    "企业信息": {
+      "type": "object",
+      "description": "企业信息",
+      "properties": {
+        "id": { "type": "string", "description": "ID" },
+        "name": { "type": "string", "description": "企业名称" },
+        "contactUser": { "$ref": "#/definitions/UserInfo", "description": "联系人" }
+      }
+    }
+  }
+}

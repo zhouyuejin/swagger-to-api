@@ -1,0 +1,235 @@
+/**
+ * Swagger → 中间数据结构（models + modules）
+ *
+ * 关键点：
+ *   - 解开统一响应体 "响应结果«X»" → 实际返回类型 X
+ *   - 识别分页容器 "PageVO«X»" / "通用分页响应VO«X»" → 还原成 TypeScript 泛型 PageVO<X>
+ *   - 即使响应是 响应结果«PageVO«X»»，也展开 data 中的 list.items 还原成 PageVO<X>
+ *   - 收集每个 model / 每个函数依赖的 import，便于 emitter 写出
+ *   - 命名策略通过参数注入（调用方可传入自定义 NamingStrategy）
+ */
+import type {
+  ApiFunction, Definition, FunctionParams, Model, Parameter, ParseResult, QueryParam, Schema, SwaggerDoc,
+} from './types.js';
+import type { NamingStrategy } from './naming.js';
+import { PinyinNamingStrategy, resolveConflicts } from './naming.js';
+
+/** 已知的分页响应 VO 前缀（Springfox 中文泛型语法 «» ） */
+const PAGE_VO_PREFIXES = ['PageVO\u00AB', '通用分页响应VO\u00AB'];
+
+/** 判断 definition 名是不是分页泛型容器，是则返回内部类型 X，否则 null */
+function extractPageVoInnerRef(refName: string): string | null {
+  const stripped = refName.replace(/_\d+$/, '');
+  for (const prefix of PAGE_VO_PREFIXES) {
+    if (stripped.startsWith(prefix) && stripped.endsWith('\u00BB')) {
+      return stripped.slice(prefix.length, -1);
+    }
+  }
+  return null;
+}
+
+interface TypeResolution { typeStr: string; imports: Set<string> }
+
+/** 递归解析 schema → TS 类型字符串 + import 集合 */
+function resolveType(schema: Schema | undefined, defs: Record<string, Definition>, naming: NamingStrategy): TypeResolution {
+  if (!schema) return { typeStr: 'any', imports: new Set() };
+
+  // $ref 引用
+  if (schema.$ref) {
+    const refName = schema.$ref.replace('#/definitions/', '');
+    // 分页容器 → 还原泛型
+    if (extractPageVoInnerRef(refName) !== null) {
+      const innerItems = defs[refName]?.properties?.list?.items;
+      if (innerItems) {
+        const inner = resolveType(innerItems, defs, naming);
+        return { typeStr: `PageVO<${inner.typeStr}>`, imports: new Set([...inner.imports, 'PageVO']) };
+      }
+      return { typeStr: 'PageVO<any>', imports: new Set(['PageVO']) };
+    }
+    // 响应结果引用不应出现在 DTO 属性里，容错为 any
+    if (refName.startsWith('响应结果')) {
+      return { typeStr: 'any', imports: new Set() };
+    }
+    const engName = naming.modelName(refName);
+    return { typeStr: engName, imports: new Set([engName]) };
+  }
+
+  // 数组
+  if (schema.type === 'array') {
+    const inner = resolveType(schema.items ?? { type: 'object' }, defs, naming);
+    return { typeStr: `${inner.typeStr}[]`, imports: inner.imports };
+  }
+
+  // 内联对象
+  if (schema.type === 'object' && schema.properties) {
+    const imports = new Set<string>();
+    const props = Object.entries(schema.properties)
+      .map(([k, v]) => {
+        const inner = resolveType(v, defs, naming);
+        inner.imports.forEach((i) => imports.add(i));
+        const desc = v.description ? `/** ${v.description} */ ` : '';
+        return `${desc}${k}?: ${inner.typeStr}`;
+      })
+      .join('; ');
+    return { typeStr: `{ ${props} }`, imports };
+  }
+
+  // 无 properties 的 object → Record
+  if (schema.type === 'object') {
+    return { typeStr: 'Record<string, any>', imports: new Set() };
+  }
+
+  // 基础类型
+  const typeMap: Record<string, string> = {
+    string: 'string', integer: 'number', number: 'number', boolean: 'boolean',
+  };
+  return { typeStr: typeMap[schema.type ?? ''] || 'any', imports: new Set() };
+}
+
+function parseProperties(props: Record<string, Schema> | undefined, defs: Record<string, Definition>, naming: NamingStrategy) {
+  if (!props) return [];
+  return Object.entries(props).map(([key, schema]) => {
+    const { typeStr, imports } = resolveType(schema, defs, naming);
+    return { name: key, type: typeStr, description: schema.description || '', imports };
+  });
+}
+
+/** 解包「响应结果»X»」的 data 字段，得到实际返回类型 */
+function unwrapResponse(def: Definition | undefined, defs: Record<string, Definition>, naming: NamingStrategy): TypeResolution {
+  const dataProp = def?.properties?.data;
+  if (!dataProp) return { typeStr: 'void', imports: new Set() };
+  return resolveType(dataProp, defs, naming);
+}
+
+function parseParams(parameters: Parameter[] | undefined, defs: Record<string, Definition>, naming: NamingStrategy): FunctionParams {
+  if (!parameters || !parameters.length) {
+    return { query: [], body: null, path: [], imports: new Set() };
+  }
+  const query: QueryParam[] = [];
+  let body: FunctionParams['body'] = null;
+  const path: FunctionParams['path'] = [];
+  const imports = new Set<string>();
+
+  for (const param of parameters) {
+    if (param.in === 'query') {
+      const { typeStr, imports: imps } = resolveType(param, defs, naming);
+      imps.forEach((i) => imports.add(i));
+      query.push({ name: param.name, type: typeStr, description: param.description || '', required: param.required || false });
+    } else if (param.in === 'body') {
+      const { typeStr, imports: imps } = resolveType(param.schema ?? param, defs, naming);
+      imps.forEach((i) => imports.add(i));
+      body = { name: param.name || 'data', type: typeStr, description: param.description || '' };
+    } else if (param.in === 'path') {
+      path.push({ name: param.name, type: resolveType(param, defs, naming).typeStr });
+    }
+  }
+  return { query, body, path, imports };
+}
+
+/**
+ * 解析接口返回类型（解开统一响应体）
+ *
+ * 关键 case：
+ *   - $ref → 响应结果«X»：解包 data
+ *   - $ref → 响应结果«PageVO«X»»：data 内联形态是 PageVO（list+pageNum+...），还原成 PageVO<X>
+ *   - $ref → PageVO«X»：还原成 PageVO<X>
+ *   - 其他 $ref：交给 unwrapResponse
+ */
+function resolveReturnType(op: { responses: Record<string, { schema?: Schema }> }, defs: Record<string, Definition>, naming: NamingStrategy): TypeResolution {
+  const schema200 = op.responses['200']?.schema ?? op.responses[200]?.schema;
+  if (!schema200) return { typeStr: 'void', imports: new Set() };
+  if (schema200.$ref) {
+    const refName = schema200.$ref.replace('#/definitions/', '');
+
+    // 响应结果«PageVO«X»» → PageVO<X>
+    if (refName.startsWith('响应结果')) {
+      const dataProp = defs[refName]?.properties?.data;
+      if (dataProp?.type === 'object' && dataProp.properties?.list?.items) {
+        const inner = resolveType(dataProp.properties.list.items, defs, naming);
+        return { typeStr: `PageVO<${inner.typeStr}>`, imports: new Set([...inner.imports, 'PageVO']) };
+      }
+      return unwrapResponse(defs[refName], defs, naming);
+    }
+
+    // 直接 $ref 指向 PageVO«X» / 通用分页响应VO«X»
+    if (extractPageVoInnerRef(refName) !== null) {
+      const innerItems = defs[refName]?.properties?.list?.items;
+      if (innerItems) {
+        const inner = resolveType(innerItems, defs, naming);
+        return { typeStr: `PageVO<${inner.typeStr}>`, imports: new Set([...inner.imports, 'PageVO']) };
+      }
+      return { typeStr: 'PageVO<any>', imports: new Set(['PageVO']) };
+    }
+
+    // 其他 $ref：标准 unwrapResponse
+    return unwrapResponse(defs[refName], defs, naming);
+  }
+  return resolveType(schema200, defs, naming);
+}
+
+/** 主解析函数 */
+export function parse(swagger: SwaggerDoc, naming?: NamingStrategy): ParseResult {
+  const strategy = naming ?? new PinyinNamingStrategy();
+  const defs = swagger.definitions ?? {};
+  const paths = swagger.paths ?? {};
+
+  // ========== 1. definitions → models ==========
+  const models = new Map<string, Model>();
+  for (const [name, def] of Object.entries(defs)) {
+    if (name.startsWith('响应结果')) continue;
+    if (extractPageVoInnerRef(name) !== null) continue;
+
+    const engName = strategy.modelName(name);
+    const props = parseProperties(def.properties, defs, strategy);
+    const allImports = new Set<string>();
+    for (const p of props) p.imports.forEach((i) => allImports.add(i));
+
+    models.set(engName, {
+      name: engName,
+      description: def.description || '',
+      properties: props,
+      imports: allImports,
+    });
+  }
+
+  // ========== 2. paths → modules ==========
+  const modules = new Map<string, ApiFunction[]>();
+  for (const [urlPath, methods] of Object.entries(paths)) {
+    const mod = strategy.moduleName(urlPath);
+    if (!modules.has(mod)) modules.set(mod, []);
+
+    for (const [method, op] of Object.entries(methods)) {
+      if (!['get', 'post', 'put', 'delete', 'patch'].includes(method)) continue;
+
+      const fnName = strategy.functionName(op.operationId || '');
+      const params = parseParams(op.parameters, defs, strategy);
+      const returnType = resolveReturnType(op, defs, strategy);
+      const consumes = op.consumes || [];
+
+      const allImports = new Set<string>([...params.imports, ...returnType.imports]);
+      modules.get(mod)!.push({
+        name: fnName,
+        method: method.toUpperCase() as ApiFunction['method'],
+        url: urlPath,
+        params,
+        returnType: returnType.typeStr,
+        summary: op.summary || '',
+        consumes,
+        imports: allImports,
+      });
+    }
+  }
+
+  // ========== 3. 同模块内冲突处理 ==========
+  for (const [, funcs] of modules) resolveConflicts(funcs);
+
+  // 转成对外的 Module 结构
+  const result: ParseResult = {
+    models,
+    modules: new Map(),
+  };
+  for (const [name, funcs] of modules) {
+    result.modules.set(name, { name, functions: funcs });
+  }
+  return result;
+}
