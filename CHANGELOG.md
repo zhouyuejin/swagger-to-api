@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > 历史版本 (≤ 0.4.2) 由维护者手动维护。从 v0.5.0 起改用 [release-please](https://github.com/googleapis/release-please) 自动生成。
 
+## [0.6.0](https://github.com/zhouyuejin/swagger-to-api/compare/swagger-to-api-v0.5.0...swagger-to-api-v0.6.0) (2026-08-25)
+
+
+### Features
+
+* CLI 新增 --check 模式（CI 检测 swagger 漂移） ([535cdac](https://github.com/zhouyuejin/swagger-to-api/commit/535cdac77717daad6edc450cccf5834bdaf44b3e))
+* initial release ([c850f18](https://github.com/zhouyuejin/swagger-to-api/commit/c850f18036dd7c61a26d9cc1153d4cf65c8672d3))
+* **v0.2.0:** P0 修复 — required 字段 / 循环引用 / runtime 安全 / provenance ([fd3121d](https://github.com/zhouyuejin/swagger-to-api/commit/fd3121de2be3d81a49a5b76fca2c39e5d9c1f4f6))
+* **v0.3.0:** P1 — enum / format / CI matrix test ([7fa3f24](https://github.com/zhouyuejin/swagger-to-api/commit/7fa3f24292d73e1cad8c943d334a73d1816abd3a))
+* **v0.4.0:** OpenAPI 3.x 支持 ([4418db4](https://github.com/zhouyuejin/swagger-to-api/commit/4418db4d77e9aac55f23dde1c7de458ed3e8185c))
+
+
+### Bug Fixes
+
+* **ci:** publish job 也按 ci → build → test 顺序（之前漏了） ([26f3afa](https://github.com/zhouyuejin/swagger-to-api/commit/26f3afad7cd8ff05d66bb1ebaceba4f91d0e4841))
+* **ci:** publish job 接受 release-please 默认的 swagger-to-api-v* tag 格式 ([82cc1e6](https://github.com/zhouyuejin/swagger-to-api/commit/82cc1e6a89d23282ecd012814c8d45d5abfb7949))
+* **ci:** test 在 build 之后 + 简化 release-please config ([081386d](https://github.com/zhouyuejin/swagger-to-api/commit/081386d200e1a2861b0d86b1eac622cb3e80a733))
+* **release:** 移除 changelogPath 配置 ([3fb294d](https://github.com/zhouyuejin/swagger-to-api/commit/3fb294d7c589512306676767354d2cc25b11a678))
+* rename scope to [@zhouyuejin1995](https://github.com/zhouyuejin1995) to match npm username, bump 0.1.1 ([7d5a883](https://github.com/zhouyuejin/swagger-to-api/commit/7d5a883357b49119ed5a4f315c3d316a1793a421))
+* **test:** cli-check 测试自给自足（跑前先 build） ([01de631](https://github.com/zhouyuejin/swagger-to-api/commit/01de6312c45024023c12425fb8c4193d1a95607a))
+* **v0.4.1:** 路径/查询参数 type 从 schema 平铺到 param 一级 ([b214e6f](https://github.com/zhouyuejin/swagger-to-api/commit/b214e6fc4337d793401787ebe217abc357811c5a))
+
 ## [0.5.0](https://github.com/zhouyuejin/swagger-to-api/compare/swagger-to-api-v0.4.2...swagger-to-api-v0.5.0) (2026-08-25)
 
 
