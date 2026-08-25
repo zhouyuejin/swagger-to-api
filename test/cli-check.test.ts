@@ -1,10 +1,20 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 const CLI = path.resolve(__dirname, '..', 'dist', 'cli', 'index.js');
+
+// cli-check 测试需要 dist/cli/index.js。prepublishOnly 会先 clean 再 test，
+// 导致 dist/ 不存在。所以每个测试块前先 build 一次（增量编译，几百毫秒）。
+beforeAll(() => {
+  try {
+    execFileSync('npm', ['run', 'build'], { cwd: path.resolve(__dirname, '..'), stdio: 'pipe' });
+  } catch (e) {
+    // build 失败的话测试会自然失败（dist 不存在），不用额外报错
+  }
+});
 
 describe('CLI --check 模式', () => {
   it('--help 包含 --check 选项', () => {
