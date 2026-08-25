@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 > 历史版本 (≤ 0.4.2) 由维护者手动维护。从 v0.5.0 起改用 [release-please](https://github.com/googleapis/release-please) 自动生成。
 
+## [0.6.1](https://github.com/zhouyuejin/swagger-to-api/compare/swagger-to-api-v0.6.0...swagger-to-api-v0.6.1) (2026-08-25)
+
+
+### Bug Fixes
+
+* **ci:** publish workflow 也要接受 swagger-to-api-v* tag ([16b6a43](https://github.com/zhouyuejin/swagger-to-api/commit/16b6a437868d8c8575bc7b0b86b545d7aaff2f81))
+
 ## [0.6.0](https://github.com/zhouyuejin/swagger-to-api/compare/swagger-to-api-v0.5.0...swagger-to-api-v0.6.0) (2026-08-25)
 
 
