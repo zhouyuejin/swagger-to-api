@@ -1,11 +1,9 @@
 {
-  "releaseType": "node",
-  "packageName": "@zhouyuejin1995/swagger-to-api",
-  "changelogPath": "CHANGELOG.md",
-  "bumpMinorPreMajor": false,
-  "bumpPatchForMinorPreMajor": false,
-  "includeComponentInTag": false,
-  "versioning": "default",
-  "pullRequestTitlePattern": "chore(main): release${scope} v${version}",
-  "tagName": "v${version}"
+  "packages": {
+    ".": {
+      "releaseType": "node",
+      "packageName": "@zhouyuejin1995/swagger-to-api",
+      "changelogPath": "CHANGELOG.md"
+    }
+  }
 }
