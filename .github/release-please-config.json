@@ -1,0 +1,16 @@
+{
+  "$schema": "https://opensource.google.com/assets/jsonschemas/release-please-config.json",
+  "packages": {
+    ".": {
+      "package-name": "@zhouyuejin1995/swagger-to-api",
+      "release-type": "node",
+      "changelog-path": "CHANGELOG.md",
+      "bump-minor-pre-major": false,
+      "bump-patch-for-minor-pre-major": false,
+      "draft": false,
+      "prerelease": false,
+      "include-component-in-tag": false
+    }
+  },
+  "releaseLabels": ["autorelease: pending"]
+}

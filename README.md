@@ -154,6 +154,50 @@ emit(result, {
 | `emitRuntimeTemplate` | `boolean` | `true` | 是否生成默认 `runtime.ts`（已存在则不覆盖） |
 | `httpMethodMap` | `HttpMethodMap` | `{ simple: GET→get, POST→post, ...; withBody: POST→postJson, ... }` | 生成的 service 调用 `http.<method>` 时的方法名映射 |
 
+## 发布流程（维护者）
+
+从 v0.5.0 起，本项目用 [release-please](https://github.com/googleapis/release-please) 自动化发布：
+
+```
+开发者合并 PR（commit 用 conventional 格式：feat: / fix: / chore:）
+         ↓
+release-please Action 自动开 / 更新「chore(main): release v0.X.0」PR
+         ↓
+维护者 review 该 PR（自动 bump version + 更新 CHANGELOG.md + 改 manifest.json）
+         ↓
+合并 release PR → release-please 自动打 tag + 开 GitHub Release
+         ↓
+现有 publish.yml 监听到 tag push → npm publish --access public
+         ↓
+新版本上 npm
+```
+
+### 本地操作（已废弃）
+
+以前需要：
+```bash
+npm run release:patch   # 改版本 + commit + tag + push
+```
+
+现在不用了。版本号、CHANGELOG、tag 全部由 release-please 在 PR 里生成。**本地的 `scripts/release.sh` 仍保留作为应急手动发布用**。
+
+### Conventional Commits 约定
+
+| prefix | 触发版本 | 例 |
+|---|---|---|
+| `feat:` | minor (0.4.2 → 0.5.0) | `feat: 支持 oneOf 联合类型` |
+| `fix:` | patch (0.4.2 → 0.4.3) | `fix: 路径参数 type 错误` |
+| `feat!:` 或 `BREAKING CHANGE:` | major | `feat!: 重命名 runtime 默认方法名` |
+| `chore:` / `docs:` / `test:` / `refactor:` / `perf:` | 不触发版本 | `chore: 更新 README` |
+
+### 手动应急发布
+
+若 release-please 罢工，可用本地脚本：
+```bash
+npm run release:patch    # 0.4.2 → 0.4.3（自动 clean + lint + test + build + 推送）
+# 然后手动到 GitHub 开 release + push tag 触发 publish.yml
+```
+
 ## 常见问题
 
 ### 1. 生成器生成的 import 路径不对？
