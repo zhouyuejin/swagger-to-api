@@ -8,6 +8,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
   release-please:
@@ -16,7 +17,9 @@ jobs:
       - uses: googleapis/release-please-action@v4
         id: release
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # 必须用 PAT 而非 GITHUB_TOKEN，因为后者默认无创建 PR 权限
+          # 在仓库 Settings → Secrets → Actions 里加 RELEASE_PLEASE_TOKEN
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           config-file: .github/release-please-config.json
           manifest-file: .github/release-please-manifest.json
       - name: Log release output
@@ -24,6 +27,4 @@ jobs:
           echo "release_created: ${{ steps.release.outputs.release_created }}"
           echo "tag_name: ${{ steps.release.outputs.tag_name }}"
           echo "version: ${{ steps.release.outputs.version }}"
-          echo "release_id: ${{ steps.release.outputs.release_id }}"
-          echo "pr_number: ${{ steps.release.outputs.pr_number }}"
           echo "pr_url: ${{ steps.release.outputs.pr_url }}"
