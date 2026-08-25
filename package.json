@@ -30,7 +30,12 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "tsc --noEmit",
-    "prepublishOnly": "npm run clean && npm run lint && npm run test && npm run build"
+    "prepublishOnly": "npm run clean && npm run lint && npm run test && npm run build",
+    "release": "./scripts/release.sh",
+    "release:patch": "./scripts/release.sh patch",
+    "release:minor": "./scripts/release.sh minor",
+    "release:major": "./scripts/release.sh major",
+    "release:dry": "./scripts/release.sh patch --dry"
   },
   "keywords": [
     "swagger",
