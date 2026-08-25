@@ -13,10 +13,11 @@
  *   - format：date-time / date / int64 走 JSDoc 提示；binary 映射成 Blob
  */
 import type {
-  ApiFunction, Definition, FunctionParams, Model, Parameter, ParseResult, QueryParam, Schema, SwaggerDoc,
+  ApiFunction, Definition, FunctionParams, Model, OpenAPIDoc, Parameter, ParseResult, QueryParam, Schema, SwaggerDoc,
 } from './types.js';
 import type { NamingStrategy } from './naming.js';
 import { PinyinNamingStrategy, resolveConflicts } from './naming.js';
+import { isOpenAPI3, normalizeOpenApi3 } from './openapi3.js';
 
 const PAGE_VO_PREFIXES = ['PageVO\u00AB', '通用分页响应VO\u00AB'];
 
@@ -238,7 +239,9 @@ function resolveReturnType(
 }
 
 /** 主解析函数 */
-export function parse(swagger: SwaggerDoc, naming?: NamingStrategy): ParseResult {
+export function parse(swagger: SwaggerDoc | OpenAPIDoc, naming?: NamingStrategy): ParseResult {
+  // OpenAPI 3.x 检测 → 转成 Swagger 2.0 形态走老路径
+  if (isOpenAPI3(swagger)) swagger = normalizeOpenApi3(swagger);
   const strategy = naming ?? new PinyinNamingStrategy();
   const defs = swagger.definitions ?? {};
   const paths = swagger.paths ?? {};

@@ -15,3 +15,4 @@ export * from './core/naming.js';
 export { parse } from './core/parser.js';
 export { emit } from './core/emitter.js';
 export { RUNTIME_TEMPLATE } from './core/runtime-template.js';
+export { isOpenAPI3, normalizeOpenApi3 } from './core/openapi3.js';

@@ -1,3 +1,50 @@
+/** OpenAPI 3.x 文档结构 */
+export interface OpenAPIComponents {
+  schemas?: Record<string, Definition>;
+}
+
+export interface MediaType {
+  schema?: Schema;
+}
+
+export interface RequestBody {
+  description?: string;
+  required?: boolean;
+  content: Record<string, MediaType>;
+}
+
+export interface OpenAPIOperation {
+  operationId?: string;
+  summary?: string;
+  description?: string;
+  parameters?: Parameter[];
+  requestBody?: RequestBody;
+  responses: Record<string, OpenAPIResponse>;
+  tags?: string[];
+}
+
+export interface OpenAPIResponse {
+  description: string;
+  content?: Record<string, MediaType>;
+}
+
+export interface OpenAPIPathItem {
+  get?: OpenAPIOperation;
+  post?: OpenAPIOperation;
+  put?: OpenAPIOperation;
+  delete?: OpenAPIOperation;
+  patch?: OpenAPIOperation;
+}
+
+export interface OpenAPIDoc {
+  openapi: string;
+  info: { title: string; version: string; description?: string };
+  paths: Record<string, OpenAPIPathItem>;
+  components?: OpenAPIComponents;
+}
+
+/** Swagger 2.0 文档结构 */
+
 /**
  * Swagger 2.0 文档结构 + 解析中间数据结构
  */
